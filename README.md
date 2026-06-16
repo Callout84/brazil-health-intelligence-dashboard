@@ -8,169 +8,139 @@
 
 ---
 
-# 📊 Visão Geral
+# 📊 Sobre o Projeto
 
 O Brazil Health Intelligence Dashboard é um projeto de Business Intelligence desenvolvido com dados públicos da Agência Nacional de Saúde Suplementar (ANS).
 
-O objetivo foi transformar dados brutos do mercado brasileiro de saúde suplementar em uma plataforma analítica capaz de apoiar decisões estratégicas através de indicadores executivos, análises regionais e projeções futuras.
+O objetivo foi transformar dados brutos do setor de saúde suplementar em uma plataforma executiva capaz de apoiar análises estratégicas e tomada de decisão baseada em dados.
 
-Este projeto simula um cenário real encontrado em empresas de saúde, operadoras, consultorias e áreas de planejamento estratégico.
+Este projeto faz parte da construção do meu portfólio em Data Analytics, Business Intelligence e Data Science, aplicando conceitos de análise de dados, visualização, indicadores de desempenho e storytelling analítico.
 
 ---
 
 # 🎯 Problema de Negócio
 
-O setor de saúde suplementar movimenta milhões de beneficiários em todo o Brasil e exige acompanhamento constante de indicadores de crescimento, participação de mercado e tendências regionais.
+O mercado de saúde suplementar brasileiro movimenta milhões de beneficiários e exige monitoramento constante por parte de gestores, operadoras e tomadores de decisão.
 
-Executivos e gestores precisam responder rapidamente perguntas como:
+Questões importantes incluem:
 
-* O mercado está crescendo ou desacelerando?
-* Quais estados apresentam maior expansão?
-* Onde estão os riscos e oportunidades?
-* Qual região concentra maior participação?
+* O mercado está crescendo ou retraindo?
+* Quais estados lideram a expansão?
+* Onde estão os principais riscos?
+* Qual região apresenta maior potencial de crescimento?
 * Como o mercado pode evoluir nos próximos anos?
 
-Este dashboard foi desenvolvido para responder essas perguntas de forma visual e objetiva.
+O dashboard foi construído para responder essas perguntas de forma rápida e visual.
 
 ---
 
-# 📂 Fonte dos Dados
+# 📁 Fonte dos Dados
 
-Dados públicos oficiais disponibilizados pela Agência Nacional de Saúde Suplementar (ANS).
+Dados públicos disponibilizados pela:
 
-Fonte:
-
-https://dadosabertos.ans.gov.br/
+**Agência Nacional de Saúde Suplementar (ANS)**
 
 Base utilizada:
 
-* Beneficiários por Unidade Federativa
-* Mercado de Saúde Suplementar
-* Série histórica nacional
+* Beneficiários de Planos de Saúde
+* Série Histórica Nacional
+* Informações Regionais
+* Dados Trimestrais do Mercado
 
 Período analisado:
 
-* Março/2024 até Dezembro/2025
-
----
-
-# 📈 Indicadores Monitorados
-
-### Mercado Nacional
-
-* Total de beneficiários
-* Crescimento Trimestral
-* Crescimento YoY (%)
-* Crescimento Absoluto
-* Participação Regional
-
-### Inteligência Regional
-
-* Ranking por Estado
-* Crescimento por Unidade Federativa
-* Distribuição Geográfica
-* Participação por Região
-
-### Projeções
-
-* Forecast 2026–2028
-* Tendências de Crescimento
-* Cenários Prospectivos
-
----
-
-# 💡 Principais Insights
-
-### Mercado em Expansão
-
-O mercado de saúde suplementar apresentou crescimento consistente ao longo do período analisado.
-
-### Liderança Regional
-
-A região Sudeste concentra a maior participação nacional, reforçando sua relevância econômica e populacional.
-
-### Crescimento Descentralizado
-
-Estados fora dos grandes centros começam a apresentar crescimento relevante, indicando expansão do setor para novas regiões.
-
-### Oportunidades Futuras
-
-As projeções sugerem continuidade do crescimento da base de beneficiários nos próximos anos.
+**Março/2024 até Dezembro/2025**
 
 ---
 
 # 🛠 Tecnologias Utilizadas
 
-* HTML5
-* CSS3
-* JavaScript
-* Chart.js
+* SQL
+* Python
+* Pandas
 * Business Intelligence
 * Data Analytics
-* Forecasting
+* HTML
+* CSS
+* JavaScript
 * GitHub Pages
 * Inteligência Artificial aplicada ao desenvolvimento
 
 ---
 
-# 🏗 Estrutura Analítica
+# 📈 Principais Indicadores
 
-O dashboard foi organizado em múltiplas camadas de análise:
+O dashboard apresenta indicadores executivos como:
+
+* Total de Beneficiários
+* Crescimento YoY
+* Crescimento Trimestral
+* Crescimento Absoluto
+* Participação Regional
+* Ranking por Estado
+* Distribuição Geográfica
+* Forecast de Mercado (2026–2028)
+
+---
+
+# 🔍 Principais Insights
+
+Entre os principais achados da análise:
+
+* 26 dos 27 estados apresentaram crescimento no período analisado.
+* A Região Sudeste concentra a maior participação do mercado nacional.
+* O Centro-Oeste apresentou o maior crescimento percentual.
+* Alagoas foi o único estado com retração observada.
+* O setor demonstra tendência de crescimento contínuo no horizonte analisado.
+
+---
+
+# 📊 Estrutura do Dashboard
 
 ### Panorama Executivo
 
-Visão consolidada dos principais indicadores de mercado.
+Visão consolidada dos principais KPIs do setor.
 
 ### Inteligência Regional
 
-Comparação entre estados e regiões brasileiras.
+Comparação entre estados e regiões.
+
+### Campinas RM
+
+Análise focada na Região Metropolitana de Campinas.
 
 ### Forecast 2026–2028
 
-Projeções futuras baseadas em séries temporais.
+Projeções futuras do mercado.
 
 ### Insights Executivos
 
-Principais conclusões para apoio à tomada de decisão.
+Resumo das descobertas estratégicas.
 
 ---
 
-# 🚀 Competências Demonstradas
-
-Durante este projeto foram aplicados conceitos de:
-
-* Business Intelligence
-* Data Analytics
-* Storytelling com Dados
-* Visualização de Dados
-* Construção de KPIs
-* Análise Exploratória
-* Forecasting
-* Tomada de Decisão Baseada em Dados
-
----
-
-# 👨‍💻 Sobre Mim
+# 🚀 Objetivo Profissional
 
 Sou estudante de Data Science em transição de carreira para a área de Dados.
 
-Atualmente desenvolvo projetos utilizando dados reais com foco em:
+Este projeto representa a aplicação prática dos conhecimentos que venho desenvolvendo em SQL, Python, Analytics, Business Intelligence e Inteligência Artificial.
 
-* Python
-* SQL
-* Power BI
-* Business Intelligence
-* Analytics
-* Inteligência Artificial aplicada a Dados
+Meu foco é atuar profissionalmente em posições de:
 
-Meu objetivo é atuar profissionalmente como Analista de Dados, BI Analyst ou Analytics Professional, construindo soluções que transformem dados em decisões de negócio.
+* Analista de Dados Júnior
+* Business Intelligence Júnior
+* Analytics Júnior
 
 ---
 
-# 📬 Contato
+# 👨‍💻 Autor
 
-LinkedIn:
-https://www.linkedin.com/in/hewerson-francelino
+**Hewerson Francelino**
+
+Campinas - SP
 
 GitHub:
 https://github.com/Callout84
+
+LinkedIn:
+https://www.linkedin.com/in/hewerson-francelino-a86319183/
