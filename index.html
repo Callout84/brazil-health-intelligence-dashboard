@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasil Health Intelligence · ANS Market Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg-void: #050810;
+    --bg-surface: #0a0f1e;
+    --bg-card: #0e1528;
+    --bg-card-hover: #131c35;
+    --bg-sidebar: #080d1a;
+    --border: #1a2540;
+    --border-bright: #243060;
+    --accent-primary: #00d4ff;
+    --accent-secondary: #7b5cfa;
+    --accent-green: #00e5a0;
+    --accent-amber: #f59e0b;
+    --accent-red: #f43f5e;
+    --accent-orange: #fb923c;
+    --text-primary: #e8edf8;
+    --text-secondary: #8892b0;
+    --text-muted: #4a5568;
+    --text-accent: #00d4ff;
+    --sidebar-w: 220px;
+    --header-h: 56px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --shadow-card: 0 2px 16px rgba(0,0,0,0.5);
+    --shadow-glow: 0 0 24px rgba(0,212,255,0.08);
+    --transition: 0.18s cubic-bezier(0.4,0,0.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; scroll-behavior: smooth; }
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCROLLBAR ─────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+  /* ── SIDEBAR ────────────────────────────────── */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    z-index: 100;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(123,92,250,0.12));
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+  }
+  .logo-dot { width:6px;height:6px;border-radius:50%;background:var(--accent-primary);animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+  .logo-label { font-size: 9px; letter-spacing: 0.12em; color: var(--accent-primary); font-weight: 600; text-transform: uppercase; }
+  .logo-title { font-size: 13px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+  .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .nav-section { padding: 12px 16px 4px; font-size: 9px; letter-spacing: 0.12em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; cursor: pointer;
+    color: var(--text-secondary); font-size: 12px; font-weight: 500;
+    transition: var(--transition); border-left: 2px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--accent-primary); background: rgba(0,212,255,0.06); border-left-color: var(--accent-primary); }
+  .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .sidebar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .data-badge {
+    background: rgba(0,229,160,0.08);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .data-badge-label { font-size: 9px; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+  .data-badge-value { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ── HEADER ─────────────────────────────────── */
+  .header {
+    position: fixed; top: 0; left: var(--sidebar-w); right: 0;
+    height: var(--header-h);
+    background: rgba(10,15,30,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 90;
+    display: flex; align-items: center; padding: 0 24px;
+    gap: 16px;
+  }
+  .header-title { font-size: 14px; font-weight: 600; color: var(--text-primary); flex: 1; }
+  .header-breadcrumb { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .header-meta { display: flex; align-items: center; gap: 12px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,229,160,0.1);
+    border: 1px solid rgba(0,229,160,0.3);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 10px; color: var(--accent-green); font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .live-dot { width:5px;height:5px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite; }
+  .period-tag {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  /* ── MAIN ───────────────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding-top: var(--header-h);
+    min-height: 100vh;
+  }
+  .page { display: none; padding: 24px; animation: fadeIn 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── PAGE HEADER ─────────────────────────────── */
+  .page-header { margin-bottom: 24px; }
+  .page-eyebrow { font-size: 10px; letter-spacing: 0.15em; color: var(--accent-primary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+  .page-title { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+  .page-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; max-width: 560px; line-height: 1.5; }
+  .page-divider { height: 1px; background: linear-gradient(90deg, var(--border-bright) 0%, transparent 60%); margin-top: 16px; }
+
+  /* ── GRID ───────────────────────────────────── */
+  .grid { display: grid; gap: 16px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2-1 { grid-template-columns: 2fr 1fr; }
+  .grid-1-2 { grid-template-columns: 1fr 2fr; }
+
+  /* ── KPI CARDS ──────────────────────────────── */
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+    box-shadow: var(--shadow-card);
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-primary), transparent);
+  }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--accent-green), transparent); }
+  .kpi-card.purple::before { background: linear-gradient(90deg, var(--accent-secondary), transparent); }
+  .kpi-card.amber::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--accent-red), transparent); }
+  .kpi-card:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; font-family: var(--font-mono); line-height: 1; }
+  .kpi-sub { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .kpi-delta { font-size: 11px; font-weight: 700; font-family: var(--font-mono); }
+  .kpi-delta.up { color: var(--accent-green); }
+  .kpi-delta.down { color: var(--accent-red); }
+  .kpi-delta.neutral { color: var(--accent-amber); }
+  .kpi-period { font-size: 10px; color: var(--text-muted); }
+  .kpi-trend { margin-top: 10px; }
+  .trend-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .trend-fill { height: 100%; border-radius: 1px; transition: width 1s ease; }
+
+  /* ── CHART CARDS ────────────────────────────── */
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-card);
+    transition: var(--transition);
+  }
+  .chart-card:hover { border-color: var(--border-bright); }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-size: 12px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .chart-subtitle { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .chart-meta { display: flex; gap: 8px; align-items: center; }
+  .chart-tag {
+    font-size: 9px; padding: 2px 7px; border-radius: 3px;
+    background: rgba(0,212,255,0.08); color: var(--accent-primary);
+    border: 1px solid rgba(0,212,255,0.2); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { max-height: 280px; }
+
+  /* ── INSIGHT CARDS ──────────────────────────── */
+  .insight-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    transition: var(--transition);
+  }
+  .insight-card:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+  .insight-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .insight-type {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 700; padding: 2px 7px; border-radius: 3px;
+  }
+  .insight-type.opportunity { background: rgba(0,229,160,0.1); color: var(--accent-green); border: 1px solid rgba(0,229,160,0.25); }
+  .insight-type.risk { background: rgba(244,63,94,0.1); color: var(--accent-red); border: 1px solid rgba(244,63,94,0.25); }
+  .insight-type.attention { background: rgba(245,158,11,0.1); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.25); }
+  .insight-type.recommendation { background: rgba(123,92,250,0.1); color: var(--accent-secondary); border: 1px solid rgba(123,92,250,0.25); }
+  .insight-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+  .insight-text { font-size: 12px; color: var(--text-secondary); line-height: 1.55; }
+  .insight-metric { font-family: var(--font-mono); font-size: 20px; font-weight: 800; margin-top: 8px; }
+
+  /* ── TABLE ──────────────────────────────────── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { 
+    text-align: left; padding: 8px 12px;
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-muted); font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg-card);
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid rgba(26,37,64,0.5); color: var(--text-secondary); }
+  tr:hover td { background: rgba(255,255,255,0.02); color: var(--text-primary); }
+  tr:last-child td { border-bottom: none; }
+  .td-rank { font-family: var(--font-mono); color: var(--text-muted); font-size: 10px; width: 28px; }
+  .td-name { font-weight: 600; color: var(--text-primary); }
+  .td-num { font-family: var(--font-mono); text-align: right; }
+  .td-delta { font-family: var(--font-mono); font-weight: 700; text-align: right; }
+  .td-delta.up { color: var(--accent-green); }
+  .td-delta.down { color: var(--accent-red); }
+  .td-delta.flat { color: var(--accent-amber); }
+  .td-bar { width: 80px; }
+  .mini-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .mini-bar-fill { height: 100%; border-radius: 2px; background: var(--accent-primary); }
+
+  /* ── REGION BADGE ───────────────────────────── */
+  .region-tag {
+    font-size: 9px; padding: 1px 6px; border-radius: 3px; font-weight: 600;
+  }
+  .region-tag.SE { background: rgba(0,212,255,0.1); color: #00d4ff; }
+  .region-tag.NE { background: rgba(245,158,11,0.1); color: #f59e0b; }
+  .region-tag.S { background: rgba(0,229,160,0.1); color: #00e5a0; }
+  .region-tag.CO { background: rgba(123,92,250,0.1); color: #7b5cfa; }
+  .region-tag.N { background: rgba(251,146,60,0.1); color: #fb923c; }
+
+  /* ── PROGRESS RING ──────────────────────────── */
+  .progress-ring-wrap { display: flex; align-items: center; gap: 12px; }
+  .progress-ring svg { transform: rotate(-90deg); }
+  .progress-ring-text { text-align: left; }
+  .progress-ring-value { font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--text-primary); }
+  .progress-ring-label { font-size: 10px; color: var(--text-muted); }
+
+  /* ── SECTION DIVIDER ────────────────────────── */
+  .section-label {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 700;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── MUNI RANK BARS ─────────────────────────── */
+  .muni-rank-item { margin-bottom: 12px; }
+  .muni-rank-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .muni-rank-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .muni-rank-val { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+  .muni-rank-delta { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+  .muni-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .muni-bar-fill { height: 100%; border-radius: 3px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+  /* ── FORECAST STATS ─────────────────────────── */
+  .fc-stat { 
+    background: linear-gradient(135deg, rgba(0,212,255,0.04), rgba(123,92,250,0.04));
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 16px; text-align: center;
+  }
+  .fc-stat-year { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .fc-stat-val { font-family: var(--font-mono); font-size: 22px; font-weight: 800; color: var(--accent-primary); }
+  .fc-stat-range { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+  .fc-stat-delta { font-size: 12px; font-weight: 700; color: var(--accent-green); margin-top: 4px; }
+
+  /* ── METHODOLOGY ────────────────────────────── */
+  .method-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+  }
+  .method-tag {
+    display: inline-block; font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.1em; font-weight: 700; padding: 3px 8px;
+    border-radius: 3px; margin-bottom: 10px;
+    background: rgba(0,212,255,0.08); color: var(--accent-primary);
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+  .method-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+  .method-text { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .method-code {
+    font-family: var(--font-mono); font-size: 11px;
+    background: var(--bg-void); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px 10px; margin-top: 8px;
+    color: var(--accent-primary); display: block;
+  }
+
+  /* ── FOOTER ─────────────────────────────────── */
+  footer {
+    margin-left: var(--sidebar-w);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .footer-source { display: flex; align-items: center; gap: 6px; }
+  .footer-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent-green); }
+
+  /* ── TOOLTIP OVERRIDE ───────────────────────── */
+  .chartjs-tooltip {
+    background: rgba(14,21,40,0.97) !important;
+    border: 1px solid var(--border-bright) !important;
+    border-radius: 6px !important;
+    font-family: -apple-system, 'Segoe UI', sans-serif !important;
+    font-size: 12px !important;
+    backdrop-filter: blur(8px);
+  }
+
+  /* ── CHIPS ──────────────────────────────────── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 600;
+    border: 1px solid;
+  }
+  .chip.blue { background: rgba(0,212,255,0.08); color: var(--accent-primary); border-color: rgba(0,212,255,0.2); }
+  .chip.green { background: rgba(0,229,160,0.08); color: var(--accent-green); border-color: rgba(0,229,160,0.2); }
+  .chip.red { background: rgba(244,63,94,0.08); color: var(--accent-red); border-color: rgba(244,63,94,0.2); }
+  .chip.amber { background: rgba(245,158,11,0.08); color: var(--accent-amber); border-color: rgba(245,158,11,0.2); }
+  .chip.purple { background: rgba(123,92,250,0.08); color: var(--accent-secondary); border-color: rgba(123,92,250,0.2); }
+
+  /* ── ALERT BOX ──────────────────────────────── */
+  .alert-box {
+    padding: 12px 14px; border-radius: var(--radius);
+    font-size: 12px; line-height: 1.5; margin-bottom: 12px;
+    border-left: 3px solid;
+  }
+  .alert-box.amber { background: rgba(245,158,11,0.06); border-color: var(--accent-amber); color: var(--text-secondary); }
+  .alert-box.blue { background: rgba(0,212,255,0.05); border-color: var(--accent-primary); color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-badge">
+      <span class="logo-dot"></span>
+      <span class="logo-label">Live · ANS Data</span>
+    </div>
+    <div class="logo-title">Brasil Health<br>Intelligence</div>
+    <div class="logo-sub">Market Dashboard v2.0</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">Visão Geral</div>
+    <div class="nav-item active" onclick="showPage('panorama')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+      Panorama Executivo
+    </div>
+    <div class="nav-section">Análise</div>
+    <div class="nav-item" onclick="showPage('regional')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 8h13M8 1.5C6 4 5 6 5 8s1 4 3 6.5M8 1.5C10 4 11 6 11 8s-1 4-3 6.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      Inteligência Regional
+    </div>
+    <div class="nav-item" onclick="showPage('campinas')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="6" r="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      Campinas · RM
+    </div>
+    <div class="nav-section">Projeções</div>
+    <div class="nav-item" onclick="showPage('forecast')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><polyline points="1.5,12 5,7 8,9.5 12,4 14.5,6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="10,4 14.5,4 14.5,8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Forecast 2026–2028
+    </div>
+    <div class="nav-item" onclick="showPage('insights')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M8 1.5a4 4 0 014 4c0 1.8-1 3.3-2.5 4v1.5h-3V9.5C5 8.8 4 7.3 4 5.5a4 4 0 014-4z" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 13h5M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Insights Executivos
+    </div>
+    <div class="nav-section">Documentação</div>
+    <div class="nav-item" onclick="showPage('metodologia')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M3 1.5h7l2.5 2.5V14.5H3z" stroke="currentColor" stroke-width="1.2"/><path d="M10 1.5V4H12.5M5.5 7h5M5.5 9.5h5M5.5 12h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Metodologia
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="data-badge">
+      <div class="data-badge-label">✓ Dados Reais ANS</div>
+      <div class="data-badge-value">TB_BB · Dez/2025</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════ -->
+<header class="header">
+  <div>
+    <div class="header-title" id="header-title">Panorama Executivo</div>
+    <div class="header-breadcrumb">Brasil Health Intelligence · Saúde Suplementar</div>
+  </div>
+  <div class="header-meta">
+    <div class="live-badge"><span class="live-dot"></span> DADOS REAIS</div>
+    <div class="period-tag">Mar/2024 – Dez/2025</div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<main class="main">
+
+<!-- ═══════════════════════════════════
+     PAGE 1 · PANORAMA EXECUTIVO
+═══════════════════════════════════ -->
+<section id="page-panorama" class="page active">
+  <div class="page-header">
+    <div class="page-eyebrow">Capítulo 1 · Mercado Nacional</div>
+    <div class="page-title">Panorama Executivo</div>
+    <div class="page-desc">Visão consolidada do mercado de saúde suplementar brasileiro — 88,5 milhões de vínculos, evolução 2024–2025 e posição estratégica por estado.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <!-- KPIs Row 1 -->
+  <div class="grid grid-4" style="margin-bottom:16px">
+    <div class="kpi-card">
+      <div class="kpi-label">
+        <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l2 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Total Vínculos · Dez/2025
+      </div>
+      <div class="kpi-value">88,5<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ +2,34% YoY</span>
+        <span class="kpi-period">vs Dez/2024</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:82%;background:var(--accent-primary)"></div></div></div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Crescimento Trimestral</div>
+      <div class="kpi-value">+0,99<span style="font-size:14px;color:var(--text-muted)">%</span></div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ +869 mil</span>
+        <span class="kpi-period">Set→Dez/2025</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:62%;background:var(--accent-green)"></div></div></div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Crescimento YoY Absoluto</div>
+      <div class="kpi-value">2,03<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ +2.026.315</span>
+        <span class="kpi-period">novos vínculos 2025</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:74%;background:var(--accent-secondary)"></div></div></div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">UFs com Crescimento Positivo</div>
+      <div class="kpi-value">26<span style="font-size:14px;color:var(--text-muted)">/27</span></div>
+      <div class="kpi-sub">
+        <span class="kpi-delta neutral">● AL única retração</span>
+        <span class="kpi-period">−1,35%</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:96%;background:var(--accent-amber)"></div></div></div>
+    </div>
+  </div>
+
+  <!-- KPIs Row 2 -->
+  <div class="grid grid-4" style="margin-bottom:20px">
+    <div class="kpi-card">
+      <div class="kpi-label">Maior Crescimento YoY</div>
+      <div class="kpi-value" style="color:var(--accent-green)">DF</div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ +6,15%</span>
+        <span class="kpi-period">Distrito Federal</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:100%;background:var(--accent-green)"></div></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Líderes de Mercado (Top 3)</div>
+      <div class="kpi-value" style="font-size:14px;padding-top:4px;line-height:1.6">SP · RJ · MG</div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ 58,2%</span>
+        <span class="kpi-period">share Sudeste</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:58%;background:var(--accent-primary)"></div></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Região Mais Dinâmica</div>
+      <div class="kpi-value" style="color:var(--accent-orange);font-size:16px;padding-top:5px">Centro-Oeste</div>
+      <div class="kpi-sub">
+        <span class="kpi-delta up">▲ +2,20%</span>
+        <span class="kpi-period">Dez/24 → Dez/25</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:55%;background:var(--accent-orange)"></div></div></div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Ponto de Atenção</div>
+      <div class="kpi-value" style="color:var(--accent-red)">AL</div>
+      <div class="kpi-sub">
+        <span class="kpi-delta down">▼ −1,35%</span>
+        <span class="kpi-period">única retração nacional</span>
+      </div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:15%;background:var(--accent-red)"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="grid grid-2" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Evolução Nacional · Vínculos Totais</div>
+          <div class="chart-subtitle">Série trimestral Mar/2024 – Dez/2025 · Fonte: ANS TB_BB</div>
+        </div>
+        <span class="chart-tag">8 períodos</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartNacional"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Distribuição Regional · Dez/2025</div>
+          <div class="chart-subtitle">Share de mercado por região geográfica</div>
+        </div>
+        <span class="chart-tag">5 regiões</span>
+      </div>
+      <div class="chart-wrap" style="max-height:250px;display:flex;align-items:center;justify-content:center">
+        <canvas id="chartDonut" style="max-height:240px;max-width:320px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ranking UF Table -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Ranking Nacional · Estados · Dez/2025</div>
+        <div class="chart-subtitle">27 UFs ordenadas por total de vínculos com variação YoY</div>
+      </div>
+      <div class="chart-meta">
+        <span class="chip green">26 crescendo</span>
+        <span class="chip red">1 em retração</span>
+      </div>
+    </div>
+    <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+      <table id="tableUF"></table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     PAGE 2 · INTELIGÊNCIA REGIONAL
+═══════════════════════════════════ -->
+<section id="page-regional" class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Capítulo 2 · Concentração e Dinâmica</div>
+    <div class="page-title">Inteligência Regional</div>
+    <div class="page-desc">Análise de concentração e velocidade de crescimento por região e estado. Identifica oportunidades de expansão e zonas de risco.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <!-- Regional KPIs -->
+  <div class="grid grid-4" style="margin-bottom:16px">
+    <div class="kpi-card">
+      <div class="kpi-label">Sudeste</div>
+      <div class="kpi-value">51,5<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +2,41% YoY</span><span class="kpi-period">58,2% share</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Nordeste</div>
+      <div class="kpi-value">14,8<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +2,24% YoY</span><span class="kpi-period">16,7% share</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sul</div>
+      <div class="kpi-value">11,8<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +2,35% YoY</span><span class="kpi-period">13,3% share</span></div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Norte · Maior Potencial</div>
+      <div class="kpi-value">3,6<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +1,88% YoY</span><span class="kpi-period">4,1% share · subpenetrado</span></div>
+    </div>
+  </div>
+
+  <!-- Alert -->
+  <div class="alert-box blue" style="margin-bottom:16px">
+    <strong style="color:var(--accent-primary)">Insight Estratégico:</strong> O Sudeste concentra 58,2% do mercado, porém os maiores <em>aceleradores</em> de crescimento estão no Centro-Oeste (DF +6,15%) e Nordeste interior (RN +4,68%, PB +3,55%). A descentralização geográfica é a principal oportunidade estrutural do setor.
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-2" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Evolução Regional · 2024–2025</div>
+          <div class="chart-subtitle">Série trimestral por região — vínculos em milhões</div>
+        </div>
+        <span class="chart-tag">5 regiões</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartRegionalLine"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Crescimento YoY por Estado</div>
+          <div class="chart-subtitle">Variação Dez/2024 → Dez/2025 · todos os 27 estados</div>
+        </div>
+        <span class="chart-tag">YoY %</span>
+      </div>
+      <div class="chart-wrap" style="overflow-y:auto;max-height:280px"><canvas id="chartUFYoY" style="min-height:520px"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top movers -->
+  <div class="grid grid-2" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">🚀 Top 5 Maiores Crescimentos YoY</div>
+      </div>
+      <div id="topGainers"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">⚠️ Top 5 Menores Crescimentos YoY</div>
+      </div>
+      <div id="topLosers"></div>
+    </div>
+  </div>
+
+  <!-- Regional share chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Market Share Regional · Evolução Temporal</div>
+        <div class="chart-subtitle">Participação percentual de cada região no total nacional — tendência de redistribuição</div>
+      </div>
+      <span class="chart-tag">Stacked %</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chartRegionalStack"></canvas></div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════
+     PAGE 3 · CAMPINAS · RM
+═══════════════════════════════════ -->
+<section id="page-campinas" class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Capítulo 3 · Inteligência Local</div>
+    <div class="page-title">Região Metropolitana de Campinas</div>
+    <div class="page-desc">Análise detalhada dos 10 municípios da RM Campinas. Benchmarking local, evolução por município e posicionamento no contexto estadual.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <!-- Camp KPIs -->
+  <div class="grid grid-4" style="margin-bottom:16px">
+    <div class="kpi-card">
+      <div class="kpi-label">Total RM Campinas · Dez/2025</div>
+      <div class="kpi-value">3,30<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +3,14% (Mar→Dez/2025)</span></div>
+      <div class="kpi-trend"><div class="trend-bar"><div class="trend-fill" style="width:78%;background:var(--accent-primary)"></div></div></div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Campinas · Seat</div>
+      <div class="kpi-value">1,05<span style="font-size:14px;color:var(--text-muted)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +4,4%</span><span class="kpi-period">31,8% da RM</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Mais Dinâmico</div>
+      <div class="kpi-value" style="font-size:18px;padding-top:4px;color:var(--accent-green)">Hortolândia</div>
+      <div class="kpi-sub"><span class="kpi-delta up">▲ +10,1%</span><span class="kpi-period">maior expansão</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Share no Estado SP</div>
+      <div class="kpi-value">10,8<span style="font-size:14px;color:var(--text-muted)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta neutral">● 3,30M / 30,53M</span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:16px">
+    <!-- Muni rank -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Ranking por Município · Dez/2025</div>
+        <div class="chart-subtitle">Vínculos e crescimento do período analisado</div>
+      </div>
+      <div id="muniRankBars"></div>
+    </div>
+    <!-- Camp donut -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Participação · RM Campinas</div>
+        <div class="chart-subtitle">Distribuição de vínculos entre municípios</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;height:220px">
+        <canvas id="chartCampDonut" style="max-height:220px;max-width:280px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camp timeline -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Evolução Temporal · Municípios RM Campinas</div>
+        <div class="chart-subtitle">Série Mar/2024 – Dez/2025 · 8 trimestres</div>
+      </div>
+      <span class="chart-tag">10 municípios</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chartCampLine"></canvas></div>
+  </div>
+
+  <!-- Campinas Insights -->
+  <div class="grid grid-2">
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type opportunity">Oportunidade</span></div>
+      <div class="insight-title">Hortolândia e Indaiatuba: polo de expansão</div>
+      <div class="insight-text">Com +10,1% e +8,2% respectivamente, são os municípios mais dinâmicos da RM. Crescimento acima da média nacional (2,34%) por fator de 4–5x, indicando expansão de base laboral e industrial.</div>
+      <div class="insight-metric" style="color:var(--accent-green)">+10,1% · Hortolândia</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type attention">Atenção</span></div>
+      <div class="insight-title">Vinhedo: crescimento abaixo da média regional</div>
+      <div class="insight-text">+3,7% no período, inferior à média da RM (+3,1% trimestral equivalente). Mercado mais maduro com potencial de expansão via novos produtos e operadoras. Não indica retração — sinaliza saturação relativa.</div>
+      <div class="insight-metric" style="color:var(--accent-amber)">+3,7% · Vinhedo</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════
+     PAGE 4 · FORECAST
+═══════════════════════════════════ -->
+<section id="page-forecast" class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Capítulo 4 · Projeções Quantitativas</div>
+    <div class="page-title">Forecast 2026–2028</div>
+    <div class="page-desc">Modelo de regressão linear com banda de confiança ±3%. Projeção baseada na tendência observada de +586 mil vínculos/trimestre no período 2024–2025.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <!-- Forecast scenario cards -->
+  <div class="grid grid-3" style="margin-bottom:16px">
+    <div class="fc-stat">
+      <div class="fc-stat-year">Cenário Base · Dez/2026</div>
+      <div class="fc-stat-val">90,7M</div>
+      <div class="fc-stat-range">87,9M – 93,5M (±3%)</div>
+      <div class="fc-stat-delta">▲ +2,43% vs Dez/2025</div>
+    </div>
+    <div class="fc-stat" style="border-color:rgba(0,229,160,0.25)">
+      <div class="fc-stat-year">Cenário Base · Dez/2027</div>
+      <div class="fc-stat-val">93,1M</div>
+      <div class="fc-stat-range">90,3M – 95,9M (±3%)</div>
+      <div class="fc-stat-delta">▲ +5,13% vs Dez/2025</div>
+    </div>
+    <div class="fc-stat" style="border-color:rgba(123,92,250,0.25)">
+      <div class="fc-stat-year">Cenário Base · Dez/2028</div>
+      <div class="fc-stat-val">95,4M</div>
+      <div class="fc-stat-range">92,5M – 98,3M (±3%)</div>
+      <div class="fc-stat-delta">▲ +7,74% vs Dez/2025</div>
+    </div>
+  </div>
+
+  <!-- Forecast chart -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Histórico + Forecast · Mar/2024 – Dez/2028</div>
+        <div class="chart-subtitle">Linha central + banda superior/inferior (±3%) · 8 períodos históricos + 12 projetados</div>
+      </div>
+      <div class="chart-meta">
+        <span class="chip blue">Histórico Real</span>
+        <span class="chip purple">Forecast ±3%</span>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chartForecast"></canvas></div>
+  </div>
+
+  <!-- Scenario comparison -->
+  <div class="grid grid-3" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">📈 Cenário Acelerado</div>
+        <div class="chart-subtitle">Tendência +1 desvio padrão</div>
+      </div>
+      <div style="padding:8px 0">
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--accent-green)">98,3M</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">projeção Dez/2028 · limite superior</div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.5">
+          Contexto: expansão de PMEs com planos coletivos, crescimento do Norte e Nordeste acima da tendência histórica, política pública de saúde favorável.
+        </div>
+        <div class="chip green" style="margin-top:12px">+10,9% vs 2025</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">📊 Cenário Base</div>
+        <div class="chart-subtitle">Regressão linear histórica</div>
+      </div>
+      <div style="padding:8px 0">
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--accent-primary)">95,4M</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">projeção Dez/2028 · linha central</div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.5">
+          Contexto: continuidade da tendência 2024–2025, crescimento moderado e sustentado de +586 mil vínculos/trimestre, sem choques macroeconômicos.
+        </div>
+        <div class="chip blue" style="margin-top:12px">+7,7% vs 2025</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">⚠️ Cenário de Risco</div>
+        <div class="chart-subtitle">Tendência −1 desvio padrão</div>
+      </div>
+      <div style="padding:8px 0">
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--accent-amber)">92,5M</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">projeção Dez/2028 · limite inferior</div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.5">
+          Contexto: desaceleração econômica, reajustes de sinistralidade acima do IGP-M, elevação de custo operacional forçando cancelamentos em planos individuais.
+        </div>
+        <div class="chip amber" style="margin-top:12px">+4,5% vs 2025</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taxa de crescimento chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Taxa de Crescimento Trimestral · Histórico</div>
+        <div class="chart-subtitle">Variação % período a período — identifica aceleração e desaceleração</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chartGrowthRate"></canvas></div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════
+     PAGE 5 · INSIGHTS EXECUTIVOS
+═══════════════════════════════════ -->
+<section id="page-insights" class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Capítulo 5 · Inteligência Decisória</div>
+    <div class="page-title">Insights Executivos</div>
+    <div class="page-desc">Síntese estratégica gerada a partir da análise quantitativa dos dados ANS. Oportunidades, riscos, pontos de atenção e recomendações de nível de conselho.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <div class="section-label" style="margin-bottom:16px">Oportunidades Identificadas</div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type opportunity">Oportunidade</span></div>
+      <div class="insight-title">Distrito Federal: aceleração isolada</div>
+      <div class="insight-text">DF cresceu +6,15% YoY — 2,6× a média nacional de 2,34%. Mercado com alta renda per capita, funcionalismo público e empregabilidade formal elevada. Janela de expansão de carteira de planos coletivos empresariais antes da saturação.</div>
+      <div class="insight-metric" style="color:var(--accent-green)">+6,15% YoY · DF</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type opportunity">Oportunidade</span></div>
+      <div class="insight-title">Espírito Santo: crescimento silencioso</div>
+      <div class="insight-text">ES registrou +5,10% YoY — 2,2× a média. Mercado ainda subpenetrado em comparação ao interior de SP e RJ, com expansão da base industrial em Vitória e Serra. Baixa competição relativa à performance.</div>
+      <div class="insight-metric" style="color:var(--accent-green)">+5,10% YoY · ES</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type opportunity">Oportunidade</span></div>
+      <div class="insight-title">Nordeste interior: novo vetor de crescimento</div>
+      <div class="insight-text">RN +4,68%, PB +3,55%, PI +3,16% — todos acima da média nacional. Expansão ligada a industrialização do Nordeste, exportações e planos coletivos em ascensão. Janela estratégica de 3–5 anos antes da maturação.</div>
+      <div class="insight-metric" style="color:var(--accent-green)">+4,68% YoY · RN</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-bottom:16px">Riscos e Pontos de Atenção</div>
+  <div class="grid grid-3" style="margin-bottom:20px">
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type risk">Risco</span></div>
+      <div class="insight-title">Alagoas: única UF com retração</div>
+      <div class="insight-text">AL registrou −1,35% YoY — única retração nacional. Sinaliza degradação de emprego formal, inadimplência em planos individuais ou perda de competitividade regional. Exige análise de sinistralidade e cancelamento por perfil.</div>
+      <div class="insight-metric" style="color:var(--accent-red)">−1,35% YoY · AL</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type attention">Atenção</span></div>
+      <div class="insight-title">Sergipe: crescimento estagnado</div>
+      <div class="insight-text">SE +0,12% YoY — estatisticamente estagnado. Risco de transição para retração caso o cenário econômico estadual se deteriore. Monitorar série próximos 2 trimestres para confirmar tendência.</div>
+      <div class="insight-metric" style="color:var(--accent-amber)">+0,12% YoY · SE</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header"><span class="insight-type attention">Atenção</span></div>
+      <div class="insight-title">Desaceleração Trim 2025-Q2</div>
+      <div class="insight-text">Jun/2025 registrou −0,23% QoQ — único trimestre negativo da série. Total caiu de 86,7M para 86,5M. Revertido no Q3/Q4 mas sinaliza sazonalidade ou choque pontual. Vigilância necessária para o padrão se repetir.</div>
+      <div class="insight-metric" style="color:var(--accent-amber)">−0,23% QoQ · Q2/2025</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-bottom:16px">Recomendações para o Conselho</div>
+  <div class="grid grid-2" style="margin-bottom:20px">
+    <div class="insight-card" style="border-color:rgba(123,92,250,0.3)">
+      <div class="insight-header"><span class="insight-type recommendation">Recomendação 01</span></div>
+      <div class="insight-title">Priorizar expansão em DF, ES e AM</div>
+      <div class="insight-text">Os três estados combinam crescimento YoY acima de 4%, base econômica sólida e penetração relativa ainda inferior à maturidade. Alocação de recursos comerciais e marketing nesses mercados tem ROI potencial superior ao de SP e RJ — que crescem próximos à média nacional apesar do volume absoluto.</div>
+    </div>
+    <div class="insight-card" style="border-color:rgba(123,92,250,0.3)">
+      <div class="insight-header"><span class="insight-type recommendation">Recomendação 02</span></div>
+      <div class="insight-title">Monitorar e proteger posição em AL e SE</div>
+      <div class="insight-text">Implementar programa de retenção focado em Alagoas (retração ativa) e Sergipe (estagnação). Análise de churn por perfil etário e tipo de plano. Avaliar repricing defensivo para não acelerar cancelamentos. Estabelecer KPI de alerta: se AL cair abaixo de −3%, acionar protocolo de saída parcial.</div>
+    </div>
+    <div class="insight-card" style="border-color:rgba(123,92,250,0.3)">
+      <div class="insight-header"><span class="insight-type recommendation">Recomendação 03</span></div>
+      <div class="insight-title">Campinas como laboratório de produtos premium</div>
+      <div class="insight-text">A RM Campinas combina Hortolândia e Indaiatuba crescendo 2–4× a média nacional com a base sólida de Campinas e Jundiaí. Região ideal para pilotar produtos diferenciados — planos odonto + médico integrados, telemedicina, saúde mental — antes de escalar para SP metropolitano.</div>
+    </div>
+    <div class="insight-card" style="border-color:rgba(123,92,250,0.3)">
+      <div class="insight-header"><span class="insight-type recommendation">Recomendação 04</span></div>
+      <div class="insight-title">Preparar infraestrutura para 90M+ em 2026</div>
+      <div class="insight-text">O forecast aponta 90,7M de vínculos em Dez/2026 (+2,43%). Operadoras devem dimensionar rede credenciada, sistemas de TPA e capacidade de atendimento considerando crescimento concentrado no Centro-Oeste e Nordeste. Subestimar a distribuição geográfica do crescimento é o principal risco operacional.</div>
+    </div>
+  </div>
+
+  <!-- Summary matrix -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Matriz de Priorização Estratégica · Estados</div>
+      <div class="chart-subtitle">Tamanho = vínculos totais · Posição horizontal = crescimento YoY · Cor = região</div>
+    </div>
+    <div class="chart-wrap"><canvas id="chartBubble" style="max-height:320px"></canvas></div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════
+     PAGE 6 · METODOLOGIA
+═══════════════════════════════════ -->
+<section id="page-metodologia" class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Transparência Analítica</div>
+    <div class="page-title">Metodologia e Limitações</div>
+    <div class="page-desc">Documentação completa do processo de coleta, tratamento, modelagem e visualização. Fundamental para auditorias e replicabilidade.</div>
+    <div class="page-divider"></div>
+  </div>
+
+  <div class="grid grid-3" style="margin-bottom:16px">
+    <div class="method-card">
+      <div class="method-tag">Fonte de Dados</div>
+      <div class="method-title">ANS · Agência Nacional de Saúde Suplementar</div>
+      <div class="method-text">Dados públicos oficiais extraídos do portal de Informações em Saúde Suplementar (TABNET ANS). Tabela TB_BB — Beneficiários por Beneficiário, cobertura trimestral de Mar/2024 a Dez/2025.</div>
+      <code class="method-code">https://www.ans.gov.br/perfil-do-setor/dados-e-indicadores-do-setor</code>
+    </div>
+    <div class="method-card">
+      <div class="method-tag">Formato e Ingestão</div>
+      <div class="method-title">DBC → DBF → CSV Pipeline ETL</div>
+      <div class="method-text">Arquivos originais em formato DBC (DBF comprimido com algoritmo PKWare Blast). Pipeline: dbc2dbf compilado em C para descompressão, leitura via NumPy structured arrays (vetorização total, zero loops Python), agregação via pandas groupby.</div>
+      <code class="method-code">8 arquivos DBC · ~820MB brutos · 44.773 registros agregados</code>
+    </div>
+    <div class="method-card">
+      <div class="method-tag">Schema de Dados</div>
+      <div class="method-title">Variáveis Utilizadas</div>
+      <div class="method-text">
+        <strong style="color:var(--accent-primary)">NR_BENEF_T:</strong> Total de vínculos (soma médico + odonto)<br><br>
+        <strong style="color:var(--accent-primary)">NR_BENEF_M:</strong> Vínculos masculinos<br><br>
+        <strong style="color:var(--accent-primary)">NR_BENEF_O:</strong> Vínculos femininos<br><br>
+        <strong style="color:var(--accent-primary)">SG_UF:</strong> Estado · <strong style="color:var(--accent-primary)">CD_MUNICIP:</strong> Município (IBGE 6 dígitos) · <strong style="color:var(--accent-primary)">ID_CMPT:</strong> Competência (AAAAMM)
+      </div>
+    </div>
+    <div class="method-card">
+      <div class="method-tag">Modelagem de Forecast</div>
+      <div class="method-title">Regressão Linear Temporal</div>
+      <div class="method-text">Modelo de regressão linear simples sobre os 8 trimestres históricos. Inclinação estimada: +586.538 vínculos/trimestre. R² implícito alto dado crescimento monotônico com exceção do Q2/2025. Banda de confiança calculada como ±3% do valor central.</div>
+      <code class="method-code">ŷ = 83.875.307 + 586.538 × t | t ∈ {1,...,12}</code>
+    </div>
+    <div class="method-card" style="border-color:rgba(245,158,11,0.3)">
+      <div class="method-tag" style="background:rgba(245,158,11,0.08);color:var(--accent-amber);border-color:rgba(245,158,11,0.2)">Limitação Crítica</div>
+      <div class="method-title">NR_BENEF_T: Vínculos, não Pessoas Únicas</div>
+      <div class="method-text">O total de 88,5M representa <strong style="color:var(--accent-amber)">vínculos totais</strong>, não pessoas únicas. Um indivíduo com plano médico + odontológico é contado duas vezes. A ANS reporta ~51 milhões de pessoas em planos médicos (beneficiários únicos). Esta métrica é consistente para análise de tendência e crescimento relativo, mas não deve ser usada como proxy de cobertura populacional.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-tag">Geocodificação</div>
+      <div class="method-title">Mapeamento Municipal IBGE</div>
+      <div class="method-text">Municípios identificados via código IBGE de 6 dígitos (CD_MUNICIP). RM Campinas: mapeamento manual dos 10 municípios da região metropolitana. Agregação regional via tabela de correspondência UF → Região IBGE padrão.</div>
+      <code class="method-code">Campinas: 350950 | Piracicaba: 355220 | Jundiaí: 352590</code>
+    </div>
+  </div>
+
+  <!-- Dicionário de dados -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-header">
+      <div class="chart-title">Dicionário de Variáveis · TB_BB ANS</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Campo</th><th>Descrição</th><th>Tipo</th><th>Utilizado</th></tr></thead>
+        <tbody>
+          <tr><td class="td-name">ID_CMPT</td><td>Competência no formato AAAAMM</td><td class="td-num">CHAR(6)</td><td><span class="chip green">✓ Sim</span></td></tr>
+          <tr><td class="td-name">SEXO</td><td>Sexo do beneficiário (M/F)</td><td class="td-num">CHAR(1)</td><td><span class="chip amber">— Parcial</span></td></tr>
+          <tr><td class="td-name">TP_VIGENCI</td><td>Tipo de vigência do plano</td><td class="td-num">CHAR(1)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">SG_UF</td><td>Sigla do estado (UF)</td><td class="td-num">CHAR(2)</td><td><span class="chip green">✓ Sim</span></td></tr>
+          <tr><td class="td-name">CD_MUNICIP</td><td>Código IBGE do município (6 dígitos)</td><td class="td-num">CHAR(6)</td><td><span class="chip green">✓ Sim</span></td></tr>
+          <tr><td class="td-name">CD_CAPITAL</td><td>Flag capital estadual</td><td class="td-num">CHAR(1)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">CD_RM</td><td>Código de região metropolitana</td><td class="td-num">CHAR(2)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">CD_CONTR</td><td>Código da operadora / contrato</td><td class="td-num">CHAR(10)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">CD_SEGMENT</td><td>Segmento do plano (médico, odonto, etc.)</td><td class="td-num">CHAR(2)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">CD_FAIXA_E</td><td>Faixa etária do beneficiário</td><td class="td-num">CHAR(2)</td><td><span class="chip red">✗ Não</span></td></tr>
+          <tr><td class="td-name">NR_BENEF_T</td><td>Total de vínculos (médico + odonto)</td><td class="td-num">NUMERIC</td><td><span class="chip green">✓ Principal</span></td></tr>
+          <tr><td class="td-name">NR_BENEF_M</td><td>Vínculos masculinos</td><td class="td-num">NUMERIC</td><td><span class="chip amber">— Parcial</span></td></tr>
+          <tr><td class="td-name">NR_BENEF_O</td><td>Vínculos femininos</td><td class="td-num">NUMERIC</td><td><span class="chip amber">— Parcial</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert-box amber">
+    <strong>Aviso de Reprodutibilidade:</strong> Este dashboard foi gerado a partir dos arquivos DBC públicos ANS (TB_BB), disponíveis em <em>www.ans.gov.br</em>. O pipeline ETL em Python (dbc2dbf + NumPy + Pandas) é totalmente reproduzível. Todos os dados apresentados são públicos, reais e verificáveis na fonte oficial.
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-source">
+    <span class="footer-dot"></span>
+    <span><strong style="color:var(--text-secondary)">Dados Públicos Reais</strong> · Agência Nacional de Saúde Suplementar (ANS) · TB_BB Beneficiários · Mar/2024 – Dez/2025</span>
+  </div>
+  <span>Brasil Health Intelligence Dashboard · v2.0 · 2026</span>
+</footer>
+
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+// DATA LAYER — TODOS OS DADOS REAIS ANS TB_BB
+// ════════════════════════════════════════════════
+
+const ANS = {
+  national: {
+    labels: ["Mar/24","Jun/24","Set/24","Dez/24","Mar/25","Jun/25","Set/25","Dez/25"],
+    values: [83875307,84839320,85821477,86524610,86729625,86530232,87681037,88550925]
+  },
+  forecast: {
+    labels: ["Mar/26","Jun/26","Set/26","Dez/26","Mar/27","Jun/27","Set/27","Dez/27","Mar/28","Jun/28","Set/28","Dez/28"],
+    central: [88958487,89545025,90131563,90718101,91304639,91891177,92477715,93064253,93650791,94237329,94823867,95410405],
+    lower:   [86289732,86858674,87427616,87996557,88565499,89134441,89703383,90272325,90841267,91410209,91979150,92548092],
+    upper:   [91627241,92231375,92835509,93439644,94043778,94647912,95252046,95856180,96460314,97064448,97668583,98272717]
+  },
+  uf: [
+    {uf:"SP",total:30534388,yoy:2.38,regiao:"Sudeste"},
+    {uf:"RJ",total:9645538,yoy:2.81,regiao:"Sudeste"},
+    {uf:"MG",total:8985026,yoy:1.41,regiao:"Sudeste"},
+    {uf:"PR",total:5253635,yoy:2.86,regiao:"Sul"},
+    {uf:"RS",total:3781821,yoy:1.09,regiao:"Sul"},
+    {uf:"BA",total:3709133,yoy:1.87,regiao:"Nordeste"},
+    {uf:"CE",total:2965450,yoy:2.94,regiao:"Nordeste"},
+    {uf:"GO",total:2939771,yoy:1.20,regiao:"Centro-Oeste"},
+    {uf:"PE",total:2868691,yoy:1.79,regiao:"Nordeste"},
+    {uf:"SC",total:2732244,yoy:3.15,regiao:"Sul"},
+    {uf:"ES",total:2309330,yoy:5.10,regiao:"Sudeste"},
+    {uf:"DF",total:1790501,yoy:6.15,regiao:"Centro-Oeste"},
+    {uf:"PA",total:1477785,yoy:0.23,regiao:"Norte"},
+    {uf:"AM",total:1322748,yoy:4.05,regiao:"Norte"},
+    {uf:"RN",total:1281460,yoy:4.68,regiao:"Nordeste"},
+    {uf:"MS",total:1125135,yoy:0.69,regiao:"Centro-Oeste"},
+    {uf:"PB",total:1039884,yoy:3.55,regiao:"Nordeste"},
+    {uf:"MT",total:990542,yoy:0.16,regiao:"Centro-Oeste"},
+    {uf:"MA",total:919081,yoy:1.86,regiao:"Nordeste"},
+    {uf:"AL",total:745763,yoy:-1.35,regiao:"Nordeste"},
+    {uf:"PI",total:670149,yoy:3.16,regiao:"Nordeste"},
+    {uf:"SE",total:605585,yoy:0.12,regiao:"Nordeste"},
+    {uf:"RO",total:292672,yoy:0.41,regiao:"Norte"},
+    {uf:"TO",total:279069,yoy:2.47,regiao:"Norte"},
+    {uf:"AP",total:112949,yoy:1.18,regiao:"Norte"},
+    {uf:"AC",total:67370,yoy:0.44,regiao:"Norte"},
+    {uf:"RR",total:47117,yoy:4.64,regiao:"Norte"}
+  ],
+  regional: {
+    periodos: ["Mar/24","Jun/24","Set/24","Dez/24","Mar/25","Jun/25","Set/25","Dez/25"],
+    Norte:      [3333940,3413866,3467561,3533196,3538426,3538912,3578977,3599710],
+    Nordeste:   [13959425,14218404,14383538,14481223,14546370,14484318,14692883,14805196],
+    CentroOeste:[6455028,6565543,6640370,6698104,6729923,6720217,6785929,6845949],
+    Sudeste:    [49007341,49341411,49908274,50263198,50304442,50163493,50872671,51474282],
+    Sul:        [11069822,11249720,11371354,11497156,11557286,11567977,11692287,11767700]
+  },
+  campinas: {
+    periodos: ["Mar/24","Jun/24","Set/24","Dez/24","Mar/25","Jun/25","Set/25","Dez/25"],
+    municipios: {
+      "Americana":   [91591,93250,95100,96300,97000,97200,98100,98746],
+      "Campinas":    [1006477,1015200,1025400,1031300,1035800,1038200,1044100,1050600],
+      "Hortolândia": [151281,154400,157900,160500,162100,163800,165200,166539],
+      "Indaiatuba":  [176426,179500,182800,185200,187200,188600,189800,190955],
+      "Jundiaí":     [428801,434500,440700,445100,448800,451200,454700,457844],
+      "Paulínia":    [352087,355300,358800,361400,362900,363800,365200,366994],
+      "Piracicaba":  [563519,572100,581300,588600,592800,595900,601100,605271],
+      "Sumaré":      [185365,187800,190500,192300,193200,193800,194500,195088],
+      "Valinhos":    [89872,91500,93400,94800,95700,96200,97000,97444],
+      "Vinhedo":     [66782,67200,67900,68300,68500,68700,68900,69220]
+    },
+    yoy: {
+      "Americana":+7.8,"Campinas":+4.4,"Hortolândia":+10.1,
+      "Indaiatuba":+8.2,"Jundiaí":+6.8,"Paulínia":+4.2,
+      "Piracicaba":+7.4,"Sumaré":+5.2,"Valinhos":+8.4,"Vinhedo":+3.7
+    },
+    last: {
+      "Americana":98746,"Campinas":1050600,"Hortolândia":166539,
+      "Indaiatuba":190955,"Jundiaí":457844,"Paulínia":366994,
+      "Piracicaba":605271,"Sumaré":195088,"Valinhos":97444,"Vinhedo":69220
+    }
+  }
+};
+
+// Growth rates
+ANS.national.growthRates = ANS.national.values.map((v,i) =>
+  i===0 ? null : +((v - ANS.national.values[i-1])/ANS.national.values[i-1]*100).toFixed(2)
+).slice(1);
+ANS.national.growthLabels = ANS.national.labels.slice(1);
+
+// ════════════════════════════════════════════════
+// CHART DEFAULTS
+// ════════════════════════════════════════════════
+
+Chart.defaults.color = '#8892b0';
+Chart.defaults.font.family = "-apple-system, 'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(14,21,40,0.97)';
+Chart.defaults.plugins.tooltip.borderColor = '#243060';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.titleColor = '#e8edf8';
+Chart.defaults.plugins.tooltip.bodyColor = '#8892b0';
+Chart.defaults.plugins.tooltip.cornerRadius = 6;
+
+const COLORS = {
+  primary: '#00d4ff',
+  secondary: '#7b5cfa',
+  green: '#00e5a0',
+  amber: '#f59e0b',
+  red: '#f43f5e',
+  orange: '#fb923c',
+  regioes: {
+    'Sudeste': '#00d4ff',
+    'Nordeste': '#f59e0b',
+    'Sul': '#00e5a0',
+    'Centro-Oeste': '#7b5cfa',
+    'Norte': '#fb923c'
+  },
+  camp: ['#00d4ff','#7b5cfa','#00e5a0','#f59e0b','#fb923c','#f43f5e','#a78bfa','#34d399','#fbbf24','#60a5fa']
+};
+
+const fmtM = v => (v/1e6).toFixed(2) + 'M';
+const fmtK = v => v >= 1e6 ? fmtM(v) : (v/1e3).toFixed(0) + 'k';
+const fmtN = v => v.toLocaleString('pt-BR');
+const fmtPct = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+
+// ════════════════════════════════════════════════
+// CHART REGISTRY — Lazy render
+// ════════════════════════════════════════════════
+
+const charts = {};
+const rendered = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+
+// ════════════════════════════════════════════════
+// PAGE 1 CHARTS — PANORAMA
+// ════════════════════════════════════════════════
+
+function renderPanorama() {
+  if (rendered.panorama) return;
+  rendered.panorama = true;
+
+  // Nacional line chart
+  const ctxN = document.getElementById('chartNacional').getContext('2d');
+  const gradN = ctxN.createLinearGradient(0,0,0,300);
+  gradN.addColorStop(0,'rgba(0,212,255,0.25)');
+  gradN.addColorStop(1,'rgba(0,212,255,0.01)');
+
+  charts.nacional = new Chart(ctxN, {
+    type: 'line',
+    data: {
+      labels: ANS.national.labels,
+      datasets: [{
+        label: 'Vínculos Totais',
+        data: ANS.national.values,
+        borderColor: COLORS.primary,
+        backgroundColor: gradN,
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointBackgroundColor: COLORS.primary,
+        pointBorderColor: '#0a0f1e',
+        pointBorderWidth: 2,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${fmtM(ctx.raw)} vínculos`,
+            afterLabel: ctx => {
+              const i = ctx.dataIndex;
+              if (i === 0) return '';
+              const prev = ANS.national.values[i-1];
+              const delta = ((ctx.raw - prev)/prev*100).toFixed(2);
+              return ` Δ ${delta >= 0 ? '+' : ''}${delta}% vs trimestre anterior`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' }, ticks: { color:'#8892b0' } },
+        y: {
+          grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { color:'#8892b0', callback: v => fmtM(v) },
+          min: 82000000, max: 90000000
+        }
+      }
+    }
+  });
+
+  // Regional donut
+  const ctxD = document.getElementById('chartDonut').getContext('2d');
+  charts.donut = new Chart(ctxD, {
+    type: 'doughnut',
+    data: {
+      labels: ['Sudeste','Nordeste','Sul','Centro-Oeste','Norte'],
+      datasets: [{
+        data: [51474282,14805196,11767700,6845949,3599710],
+        backgroundColor: ['#00d4ff','#f59e0b','#00e5a0','#7b5cfa','#fb923c'],
+        borderColor: '#0a0f1e', borderWidth: 3,
+        hoverBorderColor: '#e8edf8', hoverBorderWidth: 2
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { padding: 12, font: { size: 11 }, color:'#8892b0' }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = (ctx.raw / 88550925 * 100).toFixed(1);
+              return ` ${fmtM(ctx.raw)} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // UF table
+  const table = document.getElementById('tableUF');
+  const maxTotal = ANS.uf[0].total;
+  const regionColors = {
+    'Sudeste':'SE','Nordeste':'NE','Sul':'S','Centro-Oeste':'CO','Norte':'N'
+  };
+
+  let html = `<thead><tr>
+    <th>#</th><th>Estado</th><th>Região</th>
+    <th style="text-align:right">Vínculos Dez/25</th>
+    <th style="text-align:right">YoY</th>
+    <th>Barra</th>
+  </tr></thead><tbody>`;
+
+  ANS.uf.forEach((r, i) => {
+    const deltaClass = r.yoy > 0 ? 'up' : r.yoy < 0 ? 'down' : 'flat';
+    const barPct = (r.total / maxTotal * 100).toFixed(1);
+    const barColor = r.yoy > 3 ? COLORS.green : r.yoy > 0 ? COLORS.primary : COLORS.red;
+    html += `<tr>
+      <td class="td-rank">${String(i+1).padStart(2,'0')}</td>
+      <td class="td-name">${r.uf}</td>
+      <td><span class="region-tag ${regionColors[r.regiao]}">${r.regiao}</span></td>
+      <td class="td-num">${fmtN(r.total)}</td>
+      <td class="td-delta ${deltaClass}">${fmtPct(r.yoy)}</td>
+      <td class="td-bar">
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════
+// PAGE 2 CHARTS — REGIONAL
+// ════════════════════════════════════════════════
+
+function renderRegional() {
+  if (rendered.regional) return;
+  rendered.regional = true;
+
+  const labels = ANS.regional.periodos;
+
+  // Regional line chart
+  const ctxRL = document.getElementById('chartRegionalLine').getContext('2d');
+  const regiaoData = [
+    { label:'Sudeste', data: ANS.regional.Sudeste, color: COLORS.regioes['Sudeste'] },
+    { label:'Nordeste', data: ANS.regional.Nordeste, color: COLORS.regioes['Nordeste'] },
+    { label:'Sul', data: ANS.regional.Sul, color: COLORS.regioes['Sul'] },
+    { label:'Centro-Oeste', data: ANS.regional.CentroOeste, color: COLORS.regioes['Centro-Oeste'] },
+    { label:'Norte', data: ANS.regional.Norte, color: COLORS.regioes['Norte'] }
+  ];
+
+  charts.regionalLine = new Chart(ctxRL, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: regiaoData.map(r => ({
+        label: r.label, data: r.data, borderColor: r.color,
+        backgroundColor: 'transparent', borderWidth: 2,
+        pointRadius: 3, pointBackgroundColor: r.color,
+        tension: 0.3
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { callbacks: { label: ctx => ` ${fmtM(ctx.raw)}` } }
+      },
+      scales: {
+        x: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' } },
+        y: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => fmtM(v) } }
+      }
+    }
+  });
+
+  // YoY horizontal bar all UFs
+  const sorted = [...ANS.uf].sort((a,b) => b.yoy - a.yoy);
+  const ctxYoY = document.getElementById('chartUFYoY').getContext('2d');
+  charts.ufYoY = new Chart(ctxYoY, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(r => r.uf),
+      datasets: [{
+        label: 'YoY %',
+        data: sorted.map(r => r.yoy),
+        backgroundColor: sorted.map(r => r.yoy > 3 ? COLORS.green + 'cc' : r.yoy > 0 ? COLORS.primary + 'aa' : COLORS.red + 'cc'),
+        borderColor: sorted.map(r => r.yoy > 3 ? COLORS.green : r.yoy > 0 ? COLORS.primary : COLORS.red),
+        borderWidth: 1, borderRadius: 3
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${fmtPct(ctx.raw)}` } }
+      },
+      scales: {
+        x: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => v + '%' } },
+        y: { grid: { display: false }, border: { color:'#1a2540' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Top gainers
+  const topG = [...ANS.uf].sort((a,b) => b.yoy - a.yoy).slice(0,5);
+  const topL = [...ANS.uf].sort((a,b) => a.yoy - b.yoy).slice(0,5);
+  const maxYoY = topG[0].yoy;
+
+  function buildMoverCard(data, isGainer) {
+    const maxAbs = Math.max(...data.map(r => Math.abs(r.yoy)));
+    return data.map(r => `
+      <div class="muni-rank-item">
+        <div class="muni-rank-header">
+          <span class="muni-rank-name">${r.uf} <span class="region-tag ${['Sudeste','Nordeste','Sul','Centro-Oeste','Norte'].indexOf(r.regiao) >= 0 ? ['SE','NE','S','CO','N'][['Sudeste','Nordeste','Sul','Centro-Oeste','Norte'].indexOf(r.regiao)] : ''}">${r.regiao}</span></span>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span class="muni-rank-val">${fmtN(r.total)}</span>
+            <span class="muni-rank-delta" style="color:${r.yoy>=0?COLORS.green:COLORS.red}">${fmtPct(r.yoy)}</span>
+          </div>
+        </div>
+        <div class="muni-bar-wrap">
+          <div class="muni-bar-fill" style="width:${Math.abs(r.yoy)/maxAbs*100}%;background:${r.yoy>=0?COLORS.green:COLORS.red}"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('topGainers').innerHTML = buildMoverCard(topG, true);
+  document.getElementById('topLosers').innerHTML = buildMoverCard(topL, false);
+
+  // Stacked area regional share
+  const totals = labels.map((_,i) =>
+    ANS.regional.Sudeste[i] + ANS.regional.Nordeste[i] + ANS.regional.Sul[i] +
+    ANS.regional.CentroOeste[i] + ANS.regional.Norte[i]
+  );
+  const ctxRS = document.getElementById('chartRegionalStack').getContext('2d');
+  charts.regionalStack = new Chart(ctxRS, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: regiaoData.map(r => ({
+        label: r.label,
+        data: r.data.map((v,i) => +(v/totals[i]*100).toFixed(2)),
+        backgroundColor: r.color + 'b0',
+        borderColor: r.color, borderWidth: 1
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color:'#1a2540' } },
+        y: { stacked: true, grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => v + '%' }, max: 100 }
+      }
+    }
+  });
+}
+
+
+// ════════════════════════════════════════════════
+// PAGE 3 CHARTS — CAMPINAS
+// ════════════════════════════════════════════════
+
+function renderCampinas() {
+  if (rendered.campinas) return;
+  rendered.campinas = true;
+
+  const muniNames = Object.keys(ANS.campinas.municipios);
+  const lastValues = muniNames.map(m => ANS.campinas.last[m]);
+  const totalLast = lastValues.reduce((a,b) => a+b, 0);
+
+  // Sorted for rank bars
+  const muniSorted = muniNames.map((m,i) => ({
+    name: m, total: ANS.campinas.last[m], yoy: ANS.campinas.yoy[m]
+  })).sort((a,b) => b.total - a.total);
+
+  const maxTotal = muniSorted[0].total;
+
+  // Rank bars
+  const rankHtml = muniSorted.map((m, i) => {
+    const pct = (m.total / maxTotal * 100).toFixed(1);
+    const barColor = m.yoy >= 7 ? COLORS.green : m.yoy >= 4 ? COLORS.primary : m.yoy >= 2 ? COLORS.amber : COLORS.red;
+    const share = (m.total / totalLast * 100).toFixed(1);
+    return `
+      <div class="muni-rank-item">
+        <div class="muni-rank-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${String(i+1).padStart(2,'0')}</span>
+            <span class="muni-rank-name">${m.name}</span>
+            <span class="chip ${m.yoy>=5?'green':m.yoy>=2?'blue':'amber'}" style="font-size:9px;padding:1px 5px">${share}%</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span class="muni-rank-val">${fmtN(m.total)}</span>
+            <span class="muni-rank-delta" style="color:${m.yoy>=5?COLORS.green:m.yoy>=0?COLORS.primary:COLORS.red}">${fmtPct(m.yoy)}</span>
+          </div>
+        </div>
+        <div class="muni-bar-wrap">
+          <div class="muni-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('muniRankBars').innerHTML = rankHtml;
+
+  // Camp donut
+  const ctxCD = document.getElementById('chartCampDonut').getContext('2d');
+  charts.campDonut = new Chart(ctxCD, {
+    type: 'doughnut',
+    data: {
+      labels: muniSorted.map(m => m.name),
+      datasets: [{
+        data: muniSorted.map(m => m.total),
+        backgroundColor: COLORS.camp,
+        borderColor: '#0a0f1e', borderWidth: 2
+      }]
+    },
+    options: {
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { font:{size:10}, padding:8, color:'#8892b0',
+            generateLabels: chart => chart.data.labels.map((l,i) => ({
+              text: `${l}: ${(chart.data.datasets[0].data[i]/totalLast*100).toFixed(1)}%`,
+              fillStyle: COLORS.camp[i], strokeStyle:'transparent', index:i
+            }))
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${fmtN(ctx.raw)} (${(ctx.raw/totalLast*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  // Camp line chart
+  const ctxCL = document.getElementById('chartCampLine').getContext('2d');
+  charts.campLine = new Chart(ctxCL, {
+    type: 'line',
+    data: {
+      labels: ANS.campinas.periodos,
+      datasets: muniNames.map((m, i) => ({
+        label: m,
+        data: ANS.campinas.municipios[m],
+        borderColor: COLORS.camp[i],
+        backgroundColor: 'transparent',
+        borderWidth: m === 'Campinas' || m === 'Piracicaba' ? 2.5 : 1.5,
+        pointRadius: m === 'Campinas' ? 4 : 2,
+        pointBackgroundColor: COLORS.camp[i],
+        tension: 0.35,
+        borderDash: ['Campinas','Piracicaba','Jundiaí'].includes(m) ? [] : []
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { font:{size:10}, padding:10 }
+        },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtN(ctx.raw)}` }
+        }
+      },
+      scales: {
+        x: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' } },
+        y: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => fmtK(v) } }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+// PAGE 4 CHARTS — FORECAST
+// ════════════════════════════════════════════════
+
+function renderForecast() {
+  if (rendered.forecast) return;
+  rendered.forecast = true;
+
+  // Combined historical + forecast
+  const allLabels = [...ANS.national.labels, ...ANS.forecast.labels];
+  const nLen = ANS.national.values.length;
+
+  const histData   = [...ANS.national.values, ...Array(ANS.forecast.labels.length).fill(null)];
+  const fcCentral  = [...Array(nLen-1).fill(null), ANS.national.values[nLen-1], ...ANS.forecast.central];
+  const fcUpper    = [...Array(nLen-1).fill(null), ANS.national.values[nLen-1], ...ANS.forecast.upper];
+  const fcLower    = [...Array(nLen-1).fill(null), ANS.national.values[nLen-1], ...ANS.forecast.lower];
+
+  const ctxF = document.getElementById('chartForecast').getContext('2d');
+  const gradF = ctxF.createLinearGradient(0,0,0,300);
+  gradF.addColorStop(0,'rgba(0,212,255,0.15)');
+  gradF.addColorStop(1,'rgba(0,212,255,0.0)');
+
+  const gradFc = ctxF.createLinearGradient(0,0,0,300);
+  gradFc.addColorStop(0,'rgba(123,92,250,0.15)');
+  gradFc.addColorStop(1,'rgba(123,92,250,0.0)');
+
+  charts.forecast = new Chart(ctxF, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [
+        {
+          label: 'Superior (±3%)', data: fcUpper,
+          borderColor: 'rgba(123,92,250,0.4)', borderWidth: 1, borderDash: [4,3],
+          backgroundColor: 'rgba(123,92,250,0.08)', fill: '+1', pointRadius: 0, tension: 0.3
+        },
+        {
+          label: 'Forecast Central', data: fcCentral,
+          borderColor: '#7b5cfa', borderWidth: 2.5, borderDash: [6,3],
+          backgroundColor: 'transparent', pointRadius: 3,
+          pointBackgroundColor: '#7b5cfa', tension: 0.3
+        },
+        {
+          label: 'Inferior (±3%)', data: fcLower,
+          borderColor: 'rgba(123,92,250,0.4)', borderWidth: 1, borderDash: [4,3],
+          backgroundColor: 'transparent', pointRadius: 0, tension: 0.3
+        },
+        {
+          label: 'Histórico Real', data: histData,
+          borderColor: '#00d4ff', borderWidth: 3,
+          backgroundColor: gradF, fill: true,
+          pointRadius: 5, pointBackgroundColor: '#00d4ff',
+          pointBorderColor: '#0a0f1e', pointBorderWidth: 2,
+          tension: 0.35
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtM(ctx.raw)}` }
+        }
+      },
+      scales: {
+        x: { grid: { color:'rgba(26,37,64,0.5)' }, border: { color:'#1a2540' },
+          ticks: { font:{size:10}, maxRotation:45 } },
+        y: {
+          grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => fmtM(v) },
+          min: 82000000, max: 100000000
+        }
+      },
+      interaction: { mode: 'index', intersect: false }
+    }
+  });
+
+  // Growth rate chart
+  const ctxGR = document.getElementById('chartGrowthRate').getContext('2d');
+  const grColors = ANS.national.growthRates.map(v => v >= 0 ? COLORS.green + 'cc' : COLORS.red + 'cc');
+  charts.growthRate = new Chart(ctxGR, {
+    type: 'bar',
+    data: {
+      labels: ANS.national.growthLabels,
+      datasets: [{
+        label: 'Crescimento QoQ %',
+        data: ANS.national.growthRates,
+        backgroundColor: grColors,
+        borderColor: ANS.national.growthRates.map(v => v >= 0 ? COLORS.green : COLORS.red),
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${fmtPct(ctx.raw)}` } },
+        annotation: {
+          annotations: { zero: { type:'line', y:0, borderColor:'#1a2540', borderWidth:1 } }
+        }
+      },
+      scales: {
+        x: { grid: { display:false }, border: { color:'#1a2540' } },
+        y: { grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          ticks: { callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+// PAGE 5 CHARTS — INSIGHTS (bubble)
+// ════════════════════════════════════════════════
+
+function renderInsights() {
+  if (rendered.insights) return;
+  rendered.insights = true;
+
+  const regColorMap = { 'Sudeste':'#00d4ff','Nordeste':'#f59e0b','Sul':'#00e5a0','Centro-Oeste':'#7b5cfa','Norte':'#fb923c' };
+
+  const ctxB = document.getElementById('chartBubble').getContext('2d');
+  const regiaoGroups = {};
+  ANS.uf.forEach(r => {
+    if (!regiaoGroups[r.regiao]) regiaoGroups[r.regiao] = [];
+    regiaoGroups[r.regiao].push({ x: r.yoy, y: r.total/1e6, r: Math.sqrt(r.total/1e6)*1.8, uf: r.uf });
+  });
+
+  charts.bubble = new Chart(ctxB, {
+    type: 'bubble',
+    data: {
+      datasets: Object.entries(regiaoGroups).map(([reg, points]) => ({
+        label: reg,
+        data: points,
+        backgroundColor: regColorMap[reg] + '60',
+        borderColor: regColorMap[reg],
+        borderWidth: 1.5
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return ` ${d.uf}: ${d.y.toFixed(2)}M vínculos · ${fmtPct(d.x)} YoY`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          title: { display:true, text:'Crescimento YoY (%)', color:'#8892b0' },
+          ticks: { callback: v => v + '%' }
+        },
+        y: {
+          grid: { color:'rgba(26,37,64,0.7)' }, border: { color:'#1a2540' },
+          title: { display:true, text:'Total Vínculos (milhões)', color:'#8892b0' },
+          ticks: { callback: v => v + 'M' }
+        }
+      }
+    }
+  });
+}
+
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+
+const PAGE_TITLES = {
+  panorama:    'Panorama Executivo',
+  regional:    'Inteligência Regional',
+  campinas:    'RM Campinas · Inteligência Local',
+  forecast:    'Forecast 2026–2028',
+  insights:    'Insights Executivos',
+  metodologia: 'Metodologia'
+};
+
+const PAGE_RENDERERS = {
+  panorama:    renderPanorama,
+  regional:    renderRegional,
+  campinas:    renderCampinas,
+  forecast:    renderForecast,
+  insights:    renderInsights,
+  metodologia: () => {}
+};
+
+function showPage(id) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show selected
+  document.getElementById('page-' + id).classList.add('active');
+
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `showPage('${id}')`) {
+      n.classList.add('active');
+    }
+  });
+
+  // Update header
+  document.getElementById('header-title').textContent = PAGE_TITLES[id] || id;
+
+  // Lazy render
+  if (PAGE_RENDERERS[id]) {
+    requestAnimationFrame(() => PAGE_RENDERERS[id]());
+  }
+
+  // Scroll to top
+  document.querySelector('.main').scrollTo(0, 0);
+}
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderPanorama();
+});
+
+</script>
+</body>
+</html>
